@@ -73,7 +73,12 @@ end function;\n\n",
 function Diff(D, N)\n\
   return Matrix( Ncols(D) * Ncols(N), [ mydiff(N[j,l], D[i,k]) : l in [1..Ncols(N)], k in [1..Ncols(D)] , j in [1..Nrows(N)], i in [1..Nrows(D)] ] );\n\
 end function;\n\n",
-    
+
+    WeightedDegreeOfRingElement := "\n\
+function WeightedDegreeOfRingElement( r, w )\n\
+  return Maximum( [ &+[ Degree(t,i)*w[i] : i in [ 1..\#w ] ] : t in Terms( r ) ] );\n\
+end function;\n\n",
+
     )
 
 );
@@ -109,12 +114,21 @@ InstallValue( GradedRingTableForMAGMATools,
                    return ListToListList( L, 2, NrColumns( M ) );
                    
                  end,
+
                Diff :=
                  function( D, N )
                    
                    return homalgSendBlocking( [ "Diff(", D, N, ")" ], HOMALG_IO.Pictograms.Diff );
                    
                  end,
+
+               WeightedDegreeOfRingElement :=
+                 function( r, weights, R )
+
+                   return Int( homalgSendBlocking( [ "WeightedDegreeOfRingElement(", r, weights, ")" ], "need_output", HOMALG_IO.Pictograms.DegreeOfRingElement ) );
+                   
+                 end,
+
                
         )
  );
