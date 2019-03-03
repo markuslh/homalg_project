@@ -698,7 +698,9 @@ InstallMethod( PolynomialRing,
         [ IsHomalgExternalRingInMAGMARep, IsList ],
         
   function( R, indets )
-    local ar, r, var, nr_var, properties, ext_obj, S, l;
+    local order, ar, r, var, nr_var, properties, ext_obj, S, P, l;
+    
+    order := ValueOption( "order" );
     
     ar := _PrepareInputForPolynomialRing( R, indets );
     
@@ -709,9 +711,24 @@ InstallMethod( PolynomialRing,
     
     ## create the new ring
     if Length( var ) = 1 and HasIsFieldForHomalg( r ) and IsFieldForHomalg( r ) then
+
         ext_obj := homalgSendBlocking( [ "PolynomialRing(", r, ")" ], [ ], [ "<", var, ">" ], TheTypeHomalgExternalRingObjectInMAGMA, properties, "break_lists", HOMALG_IO.Pictograms.CreateHomalgRing );
+
     else
-        ext_obj := homalgSendBlocking( [ "PolynomialRing(", r, Length( var ), ",\"grevlex\")" ], [ ], [ "<", var, ">" ], TheTypeHomalgExternalRingObjectInMAGMA, properties, "break_lists", HOMALG_IO.Pictograms.CreateHomalgRing );
+    
+        if order = fail then
+
+            ext_obj := homalgSendBlocking( [ "PolynomialRing(", r, Length( var ), ",\"grevlex\")" ], [ ], [ "<", var, ">" ], TheTypeHomalgExternalRingObjectInMAGMA, properties, "break_lists", HOMALG_IO.Pictograms.CreateHomalgRing );
+
+        elif order = "product" then
+
+            ext_obj := homalgSendBlocking( [ "PolynomialRing(", r, Length( var ), ",\"elim\", ", String ( [ Length( var ) - nr_var + 1 .. Length( var ) ] ),", ", String( [ 1 .. Length( var ) - nr_var ] ), ")" ], [ ], [ "<", var, ">" ], TheTypeHomalgExternalRingObjectInMAGMA, properties, "break_lists", HOMALG_IO.Pictograms.CreateHomalgRing );
+
+        else
+
+            Error( "unknown term order for polynomial ring in MAGMA" );
+
+        fi;
     fi;
     
     S := CreateHomalgExternalRing( ext_obj, TheTypeHomalgExternalRingInMAGMA );
@@ -724,6 +741,11 @@ InstallMethod( PolynomialRing,
     
     if HasIndeterminatesOfPolynomialRing( R ) and IndeterminatesOfPolynomialRing( R ) <> [ ] then
         SetBaseRing( S, R );
+        if order = fail then
+            P := PolynomialRingWithProductOrdering( R, indets );
+            SetPolynomialRingWithProductOrdering( S, P );
+            SetPolynomialRingWithProductOrdering( P, P );
+        fi;
         l := Length( var );
         SetRelativeIndeterminatesOfPolynomialRing( S, var{[ l - nr_var + 1 .. l ]} );
     fi;
@@ -731,6 +753,17 @@ InstallMethod( PolynomialRing,
     SetRingProperties( S, r, var );
     
     return S;
+    
+end );
+
+##
+InstallMethod( PolynomialRingWithProductOrdering,
+        "for homalg rings in MAGMA",
+        [ IsHomalgExternalRingInMAGMARep, IsList ],
+        
+  function( R, indets )
+    
+    return PolynomialRing( R, indets : order := "product" );
     
 end );
 
