@@ -447,13 +447,26 @@ InstallValue( CommonHomalgTableForMAGMATools,
                
                PrimaryDecomposition :=
                  function( mat )
-                   local R, v, c;
+                   local R, v, var, R2, c;
                    
                    R := HomalgRing( mat );
                    
                    v := homalgStream( R )!.variable_name;
                    
-                   mat := EntriesOfHomalgMatrix( mat );
+                   var := IndeterminatesOfPolynomialRing( R );
+
+                   # univariate polynomial rings cannot compute this decomposition; hence, construct a multivariate polynomial ring with a single variable
+                   if Length( var ) <= 1 then
+
+                       R2 := R!.AssociatedMultivariateRing;
+
+                   else
+
+                       R2 := R; 
+                   
+                   fi;
+
+                   mat := EntriesOfHomalgMatrix( R2 * mat );
                    
                    homalgSendBlocking( [ v, "Q, ", v, "P := PrimaryDecomposition(ideal<", R, "|", mat, ">)" ], "need_command", "break_lists", HOMALG_IO.Pictograms.PrimaryDecomposition );
                    homalgSendBlocking( [ v, "Q := [ GroebnerBasis( x ) : x in ", v, "Q ]" ], R, "need_command", HOMALG_IO.Pictograms.PrimaryDecomposition );
@@ -472,7 +485,7 @@ InstallValue( CommonHomalgTableForMAGMATools,
                              homalgSendBlocking( [ primary, " := Matrix(", R, ", #(", v, "Q[", i, "]), 1, ", v, "Q[", i, "] )" ], "need_command", HOMALG_IO.Pictograms.PrimaryDecomposition );
                              homalgSendBlocking( [ prime, " := Matrix(", R, ", #(", v, "P[", i, "]), 1, ", v, "P[", i, "] )" ], "need_command", HOMALG_IO.Pictograms.PrimaryDecomposition );
                              
-                             return [ primary, prime ];
+                             return [ R * primary, R * prime ];
                              
                            end
                          );
@@ -481,17 +494,30 @@ InstallValue( CommonHomalgTableForMAGMATools,
                
                RadicalDecomposition :=
                  function( mat )
-                   local R, v, c;
+                   local R, v, var, R2, c;
                    
                    R := HomalgRing( mat );
                    
                    v := homalgStream( R )!.variable_name;
                    
-                   mat := EntriesOfHomalgMatrix( mat );
+                   var := IndeterminatesOfPolynomialRing( R );
+
+                   # univariate polynomial rings cannot compute this decomposition; hence, construct a multivariate polynomial ring with a single variable
+                   if Length( var ) <= 1 then
+
+                       R2 := R!.AssociatedMultivariateRing;
+
+                   else
+
+                       R2 := R; 
                    
-                   homalgSendBlocking( [ v, "P := RadicalDecomposition(ideal<", R, "|", mat, ">)" ], "need_command", "break_lists", HOMALG_IO.Pictograms.PrimaryDecomposition );
+                   fi;
+
+                   mat := EntriesOfHomalgMatrix( R2 * mat );
+
+                   homalgSendBlocking( [ v, "P := RadicalDecomposition(ideal<", R2, "|", mat, ">)" ], "need_command", "break_lists", HOMALG_IO.Pictograms.PrimaryDecomposition );
                    homalgSendBlocking( [ v, "P := [ GroebnerBasis( x ) : x in ", v, "P ]" ], R, "need_command", HOMALG_IO.Pictograms.PrimaryDecomposition );
-                   
+
                    c := Int( homalgSendBlocking( [ "#", v, "P" ], "need_output", R, HOMALG_IO.Pictograms.PrimaryDecomposition ) );
                    
                    return
@@ -503,13 +529,47 @@ InstallValue( CommonHomalgTableForMAGMATools,
                              
                              homalgSendBlocking( [ prime, " := Matrix(", R, ", #(", v, "P[", i, "]), 1, ", v, "P[", i, "] )" ], "need_command", HOMALG_IO.Pictograms.PrimaryDecomposition );
                              
-                             return prime;
+                             return R * prime;
                              
                            end
                          );
                    
                  end,
                
+               RadicalSubobject :=
+                 function( mat )
+                   local R, var, R2, radical;
+                   
+                   if not NrColumns( mat ) = 1 then
+                       Error( "only radical of one-column matrices is supported\n" );
+                   fi;
+                   
+                   R := HomalgRing( mat );
+                   
+                   var := IndeterminatesOfPolynomialRing( R );
+
+                   # univariate polynomial rings cannot compute this decomposition; hence, construct a multivariate polynomial ring with a single variable
+                   if Length( var ) <= 1 then
+
+                       R2 := R!.AssociatedMultivariateRing;
+
+                   else
+
+                       R2 := R; 
+                   
+                   fi;
+
+                   mat := EntriesOfHomalgMatrix( R2 * mat );
+                             
+                   radical := HomalgVoidMatrix( "unkown_number_of_rows", 1, R );
+
+                   homalgSendBlocking( [ radical, ":=GroebnerBasis(Radical(ideal<", R2, "|", mat, ">))" ], "need_command", "break_lists", HOMALG_IO.Pictograms.RadicalSubobject );
+                   homalgSendBlocking( [ radical, ":=Matrix(", R, ",#(",radical,"),1,",radical,")" ], "need_command", "break_lists", HOMALG_IO.Pictograms.RadicalSubobject );
+
+                   return R * radical;
+
+                 end,
+
                Eliminate :=
                  function( rel, indets, R )
                    local elim;

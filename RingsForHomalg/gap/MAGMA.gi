@@ -698,9 +698,11 @@ InstallMethod( PolynomialRing,
         [ IsHomalgExternalRingInMAGMARep, IsList ],
         
   function( R, indets )
-    local order, ar, r, var, nr_var, properties, ext_obj, S, P, l;
+    local order, force_multivariate, ar, r, var, nr_var, properties, ext_obj, S, P, l;
     
     order := ValueOption( "order" );
+
+    force_multivariate := ValueOption( "force_multivariate" );
     
     ar := _PrepareInputForPolynomialRing( R, indets );
     
@@ -712,7 +714,11 @@ InstallMethod( PolynomialRing,
     ## create the new ring
     if Length( var ) = 1 and HasIsFieldForHomalg( r ) and IsFieldForHomalg( r ) then
 
-        ext_obj := homalgSendBlocking( [ "PolynomialRing(", r, ")" ], [ ], [ "<", var, ">" ], TheTypeHomalgExternalRingObjectInMAGMA, properties, "break_lists", HOMALG_IO.Pictograms.CreateHomalgRing );
+        if force_multivariate = true then
+            ext_obj := homalgSendBlocking( [ "PolynomialRing(", r, ",1)" ], [ ], [ "<", var, ">" ], TheTypeHomalgExternalRingObjectInMAGMA, properties, "break_lists", HOMALG_IO.Pictograms.CreateHomalgRing );
+        else
+            ext_obj := homalgSendBlocking( [ "PolynomialRing(", r, ")" ], [ ], [ "<", var, ">" ], TheTypeHomalgExternalRingObjectInMAGMA, properties, "break_lists", HOMALG_IO.Pictograms.CreateHomalgRing );
+        fi;
 
     else
     
@@ -722,7 +728,7 @@ InstallMethod( PolynomialRing,
 
         elif order = "product" then
 
-            ext_obj := homalgSendBlocking( [ "PolynomialRing(", r, Length( var ), ",\"elim\", ", String ( [ Length( var ) - nr_var + 1 .. Length( var ) ] ),", ", String( [ 1 .. Length( var ) - nr_var ] ), ")" ], [ ], [ "<", var, ">" ], TheTypeHomalgExternalRingObjectInMAGMA, properties, "break_lists", HOMALG_IO.Pictograms.CreateHomalgRing );
+            ext_obj := homalgSendBlocking( [ "PolynomialRing(", r, ", ", String( Concatenation( ListWithIdenticalEntries( Length( var ) - nr_var, 0 ), ListWithIdenticalEntries( nr_var, 1 ) ) ), ",\"elim\", ", String ( [ Length( var ) - nr_var + 1 .. Length( var ) ] ),", ", String( [ 1 .. Length( var ) - nr_var ] ), ")" ], [ ], [ "<", var, ">" ], TheTypeHomalgExternalRingObjectInMAGMA, properties, "break_lists", HOMALG_IO.Pictograms.CreateHomalgRing );
 
         else
 
@@ -752,6 +758,10 @@ InstallMethod( PolynomialRing,
     
     SetRingProperties( S, r, var );
     
+    if Length( var ) = 1 and HasIsFieldForHomalg( r ) and IsFieldForHomalg( r ) and not force_multivariate = true then
+        S!.AssociatedMultivariateRing := PolynomialRing( R, indets : force_multivariate := true );
+    fi;
+
     return S;
     
 end );
