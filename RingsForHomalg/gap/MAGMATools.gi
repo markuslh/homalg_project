@@ -714,5 +714,16 @@ InstallValue( CommonHomalgTableForMAGMATools,
                    
                  end,
                
+               Pullback :=
+                 function( phi, M )
+                 local s;
+
+                   s := Concatenation( List( phi!.images, a -> [a, ", " ] ) );
+                   s := s{[ 1 .. Length( s ) - 1 ]};
+
+                   return homalgSendBlocking( Concatenation( [ "Evaluate(", M, ", [ " ], s, [ "] )" ] ), Range( phi ), HOMALG_IO.Pictograms.Pullback );
+                   
+                 end,
+                   
         )
  );
