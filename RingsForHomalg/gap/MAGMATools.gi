@@ -415,17 +415,30 @@ InstallValue( CommonHomalgTableForMAGMATools,
                ## since MAGMA does not support Hilbert* for non-graded modules
                CoefficientsOfUnreducedNumeratorOfWeightedHilbertPoincareSeries :=
                  function( mat, weights, degrees )
-                   local R, v, hilb;
-                   
-                   if Set( weights ) <> [ 1 ] then
-                       Error( "the homalgTable entry CoefficientsOfUnreducedNumeratorOfWeightedHilbertPoincareSeries for MAGMA does not yet support weights\n" );
-                   fi;
+                   local R, v, var, R2, hilb;
                    
                    R := HomalgRing( mat );
                    
                    v := homalgStream( R )!.variable_name;
                    
-                   hilb := homalgSendBlocking( [ v, "numer,", v, "ldeg:=", "HilbertNumerator(quo<GradedModule(", R, ",[", degrees, "])|RowSequence(", mat, ")>); Append(Coefficients(", v, "numer),-", v, "ldeg)" ], "break_lists", "need_output", HOMALG_IO.Pictograms.HilbertPoincareSeries );
+                   var := IndeterminatesOfPolynomialRing( R );
+
+                   # univariate polynomial rings cannot compute this decomposition; hence, construct a multivariate polynomial ring with a single variable
+                   if Length( var ) <= 1 then
+
+                       R2 := R!.AssociatedMultivariateRing;
+
+                   else
+
+                       R2 := R; 
+                   
+                   fi;
+
+                   if Set( weights ) <> [ 1 ] then
+                       Error( "the homalgTable entry CoefficientsOfUnreducedNumeratorOfWeightedHilbertPoincareSeries for MAGMA does not yet support weights\n" );
+                   fi;
+                   
+                   hilb := homalgSendBlocking( [ v, "numer,", v, "ldeg:=", "HilbertNumerator(quo<GradedModule(", R2, ",[", degrees, "])|RowSequence(", R2 * mat, ")>); Append(Coefficients(", v, "numer),-", v, "ldeg)" ], "break_lists", "need_output", HOMALG_IO.Pictograms.HilbertPoincareSeries );
                    
                    return StringToIntList( hilb );
                    
