@@ -682,11 +682,28 @@ InstallValue( CommonHomalgTableForMAGMATools,
                
                LeadingIdeal :=
                  function( mat )
-                   local R;
-                   
+                   local R, var, R2;
+                  
+                   if HasIsZero( mat ) and IsZero( mat ) then
+                       return mat;
+                   fi;
+ 
                    R := HomalgRing( mat );
                    
-                   return homalgSendBlocking( [ "Transpose(Matrix([GroebnerBasis(LeadingMonomialIdeal(ideal<", R, "|", EntriesOfHomalgMatrix( mat ), ">))]))" ], "break_lists", HOMALG_IO.Pictograms.LeadingModule );
+                   var := IndeterminatesOfPolynomialRing( R );
+
+                   # univariate polynomial rings cannot compute this decomposition; hence, construct a multivariate polynomial ring with a single variable
+                   if Length( var ) <= 1 then
+
+                       R2 := R!.AssociatedMultivariateRing;
+
+                   else
+
+                       R2 := R; 
+                   
+                   fi;
+
+                   return homalgSendBlocking( [ "Transpose(Matrix([GroebnerBasis(LeadingMonomialIdeal(ideal<", R2, "|", EntriesOfHomalgMatrix( R2 * mat ), ">))]))" ], "break_lists", HOMALG_IO.Pictograms.LeadingModule );
                    
                  end,
                
